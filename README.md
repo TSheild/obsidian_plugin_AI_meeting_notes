@@ -1,94 +1,81 @@
-# Obsidian Sample Plugin
+# AI Meeting Notes for Obsidian
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+AI Meeting Notes is an Obsidian community plugin that captures your meetings, transcribes them with a local Whisper-compatible service, and then produces structured meeting notes with the help of a local large language model. Both the raw audio recording and the generated note are saved in your vault so nothing ever leaves your machine.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+- Record microphone audio and, where supported by the operating system, system audio (speaker output) directly from Obsidian.
+- Send the captured audio to a configurable local Whisper API for transcription.
+- Summarise the transcript with a configurable local LLM (for example an [Ollama](https://ollama.com/) model).
+- Automatically create a meeting note containing:
+  - YAML front matter with timestamps, duration and the audio file path.
+  - A Markdown summary with sections for key topics, action items and decisions.
+  - The full transcript for later review.
+- Optional automatic opening of the generated note once processing completes.
 
-## First time developing plugins?
+## Requirements
 
-Quick starting guide for new plugin devs:
+The plugin delegates all AI work to services that you run locally:
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+- **Transcription** – any Whisper-compatible HTTP endpoint that accepts a multipart file upload under the field name `file` and returns JSON containing either a `text`, `transcript` or `result` field. Examples include:
+  - [`whisper.cpp` server mode](https://github.com/ggerganov/whisper.cpp#server) (`./server -m models/ggml-base.en.bin`)
+  - [OpenAI Whisper API](https://github.com/openai/whisper) front-ends such as [`faster-whisper`](https://github.com/guillaumekln/faster-whisper) servers.
+- **Summarisation** – any LLM endpoint that accepts `POST` requests with a JSON payload `{ model, prompt, stream: false }` and returns JSON with either a `response`, `text` or `summary` field. Tested with [Ollama's HTTP API](https://github.com/jmorganca/ollama/blob/main/docs/api.md).
 
-## Releasing new releases
+Both endpoints default to `http://localhost` URLs and can be adjusted in the plugin settings.
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+## Installation
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+1. Clone or download this repository.
+2. Install dependencies and build the plugin:
 
-## Adding your plugin to the community plugin list
+   ```bash
+   npm install
+   npm run build
+   ```
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+3. Copy the resulting `main.js`, `manifest.json`, and `styles.css` files to your vault at `<vault>/.obsidian/plugins/ai-meeting-notes/`.
+4. Reload Obsidian, enable **AI Meeting Notes** in *Settings → Community plugins*, and adjust the plugin settings to point at your local AI services.
 
-## How to use
+## Usage
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+1. Ensure your local Whisper service and LLM endpoint are running.
+2. In Obsidian, click the microphone ribbon icon or run the command **Start meeting recording** to begin capturing audio.
+3. When the meeting ends, click the ribbon icon again or run **Stop meeting recording and generate notes**. The plugin will:
+   - Stop the recorder and save the audio file in the configured folder.
+   - Upload the audio to the Whisper endpoint for transcription.
+   - Send the transcript to the LLM endpoint for a Markdown summary.
+   - Create a new note in the configured folder that links to the audio and includes the transcript.
+4. Use **Cancel active meeting recording** if you want to discard the current capture without saving anything.
 
-## Manually installing the plugin
+## Configuration
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+All settings are available under *Settings → Community plugins → AI Meeting Notes*:
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint ./src/`
+- **Recordings folder** – where audio files are stored.
+- **Notes folder** – where generated meeting notes are saved.
+- **Capture system audio** – attempt to capture speaker/system audio in addition to the microphone (may require sharing system audio via your OS prompt).
+- **Transcription endpoint/model/language** – configure the local Whisper service URL and optional parameters.
+- **Summarisation endpoint/model/prompt** – configure the LLM endpoint and prompt template (use `{{transcript}}` to inject the transcript).
+- **Max transcript length for summary** – prevent sending very long transcripts to models with small context windows.
+- **Open note after creation** – automatically open the generated note.
+- **Link audio in notes** – insert a Markdown link to the audio file inside the note body.
 
-## Funding URL
+## Development
 
-You can include funding URLs where people who use your plugin can financially support it.
+The plugin uses TypeScript and esbuild for bundling.
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+```bash
+npm install
+npm run dev
 ```
 
-If you have multiple URLs, you can also do:
+The `dev` script runs esbuild in watch mode and updates `main.js` as you edit files inside `src/`.
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
+## Privacy
 
-## API Documentation
+All processing happens locally. The plugin never sends audio or notes over the network—only to the endpoints you configure, which are expected to run on the same machine.
 
-See https://github.com/obsidianmd/obsidian-api
+## License
+
+MIT
