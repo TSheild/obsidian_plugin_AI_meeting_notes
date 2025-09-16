@@ -1,8 +1,8 @@
-/*
+.ai-meeting-notes-recording {
+  color: var(--color-red);
+  font-weight: 600;
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
+.ai-meeting-notes-recording::before {
+  content: "● ";
+}
