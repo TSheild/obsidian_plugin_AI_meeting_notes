@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
-	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
-	"isDesktopOnly": false
+        "id": "ai-meeting-notes",
+        "name": "AI Meeting Notes",
+        "version": "0.1.0",
+        "minAppVersion": "1.4.16",
+        "description": "Record meetings, transcribe both microphone and system audio locally, and generate action items with your favorite LLM.",
+        "author": "AI Meeting Notes",
+        "authorUrl": "",
+        "isDesktopOnly": true
 }
