@@ -1,8 +1,74 @@
-/*
+.ai-meeting-notes-ribbon {
+  transition: color 0.2s ease, transform 0.2s ease;
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.ai-meeting-notes-recording {
+  color: var(--color-red, #ff4d4f);
+  transform: scale(1.05);
+}
 
-If your plugin does not need CSS, delete this file.
+.ai-meeting-notes-processing {
+  color: var(--color-orange, #ffa940);
+}
 
-*/
+.ai-meeting-notes-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-4);
+  min-width: 420px;
+}
+
+.ai-meeting-notes-header h2 {
+  margin-bottom: 0;
+}
+
+.ai-meeting-notes-meta {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  margin-top: var(--size-2-1);
+}
+
+.ai-meeting-notes-warning {
+  padding: var(--size-4-2);
+  border-radius: var(--radius-s);
+  background: rgba(255, 208, 0, 0.1);
+  border: 1px solid rgba(255, 208, 0, 0.4);
+  color: var(--text-warning, var(--text-normal));
+}
+
+.ai-meeting-notes-section h3 {
+  margin-bottom: var(--size-2-2);
+}
+
+.ai-meeting-notes-section p {
+  margin-top: 0;
+}
+
+.ai-meeting-notes-action-list {
+  margin: 0;
+  padding-left: var(--size-4-6);
+}
+
+.ai-meeting-notes-transcript {
+  margin-top: var(--size-4-2);
+}
+
+.ai-meeting-notes-transcript pre {
+  max-height: 240px;
+  overflow: auto;
+  padding: var(--size-4-2);
+  background: var(--background-secondary);
+  border-radius: var(--radius-s);
+  white-space: pre-wrap;
+}
+
+.ai-meeting-notes-actions {
+  display: flex;
+  gap: var(--size-4-2);
+  justify-content: flex-end;
+  margin-top: var(--size-4-2);
+}
+
+.ai-meeting-notes-actions button {
+  cursor: pointer;
+}
