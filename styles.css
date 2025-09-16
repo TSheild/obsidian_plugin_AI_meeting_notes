@@ -1,8 +1,54 @@
-/*
+.ai-meeting-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.ai-meeting-modal__buttons {
+  display: flex;
+  gap: 0.75rem;
+}
 
-If your plugin does not need CSS, delete this file.
+.ai-meeting-button {
+  background: var(--interactive-accent);
+  border: none;
+  color: var(--text-on-accent);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
 
-*/
+.ai-meeting-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ai-meeting-modal__status {
+  font-weight: 600;
+}
+
+.ai-meeting-modal__log {
+  max-height: 160px;
+  overflow-y: auto;
+  padding-left: 1.25rem;
+  margin: 0;
+}
+
+.ai-meeting-modal__log li {
+  font-size: 0.85rem;
+}
+
+.ai-meeting-modal__result {
+  padding: 0.75rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background-color: var(--background-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ai-meeting-modal__result-heading {
+  margin-bottom: 0.25rem;
+}
