@@ -1,94 +1,116 @@
-# Obsidian Sample Plugin
+# AI Meeting Notes for Obsidian
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+AI Meeting Notes turns Obsidian into a personal meeting assistant. Record both microphone input and (optionally) your computer's speaker output, transcribe the audio with a locally installed Whisper-compatible tool, and summarise the conversation with the local LLM of your choice. The plugin stores the raw audio, transcript, and generated meeting note inside your vault.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+- One-click modal to start and stop meeting recordings from within Obsidian.
+- Capture microphone audio and, when permitted by the OS, system audio via screen/audio capture.
+- Persist raw audio files and generated transcripts to configurable folders inside the vault.
+- Invoke locally installed AI tools via command-line hooks for transcription (e.g. [whisper.cpp](https://github.com/ggerganov/whisper.cpp)) and summarisation (e.g. llama.cpp-based binaries).
+- Automatic creation of a meeting note with summary, action items, transcript preview, and embedded audio playback.
+- Heuristic fallback summarisation when no LLM command is configured.
 
-## First time developing plugins?
+## Requirements
 
-Quick starting guide for new plugin devs:
+- Obsidian desktop (the plugin relies on filesystem access and local command execution).
+- A transcription CLI capable of accepting an audio file and writing a text transcript (tested with Whisper-compatible tools).
+- Optionally, a local LLM CLI capable of reading a transcript and producing a summary and action items.
+- Node.js 16+ for development/building.
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+## Installation (development)
 
-## Releasing new releases
+1. Clone the repository and install dependencies:
+   ```bash
+   npm install
+   ```
+2. Start the development watcher:
+   ```bash
+   npm run dev
+   ```
+3. Link the plugin into your vault by copying `manifest.json`, `styles.css`, and the generated `main.js` into `<Vault>/.obsidian/plugins/ai-meeting-notes/`.
+4. Enable **AI Meeting Notes** from *Settings → Community plugins*.
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
-
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
-
-## Adding your plugin to the community plugin list
-
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
-
-## How to use
-
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint ./src/`
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+For production builds run:
+```bash
+npm run build
 ```
 
-If you have multiple URLs, you can also do:
+## Configuration
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+Open *Settings → AI Meeting Notes* to configure the plugin.
+
+### Storage paths
+
+- **Recordings folder**: Vault-relative folder for raw audio files (default: `AI Meeting Notes/Recordings`).
+- **Transcripts folder**: Vault-relative folder for generated transcripts (default: `AI Meeting Notes/Transcripts`).
+- **Meeting notes folder**: Vault-relative folder for the final Markdown notes (default: `AI Meeting Notes/Notes`).
+
+### Transcription command
+
+Provide the executable path and arguments for your transcription tool. Arguments support template placeholders:
+
+- `{{audioFile}}`: Absolute path to the recorded audio file.
+- `{{outputDir}}`: Absolute path to the transcript output directory.
+- `{{baseName}}`: File stem of the recording (without extension).
+
+Example (whisper.cpp):
+```
+Transcription command: /usr/local/bin/whisper
+Transcription arguments: --model base.en --language en --output_txt --output_dir {{outputDir}} {{audioFile}}
+Transcription output extension: txt
 ```
 
-## API Documentation
+### Summarisation command
 
-See https://github.com/obsidianmd/obsidian-api
+If you have a local LLM CLI, configure it similarly. Available placeholders:
+
+- `{{transcriptFile}}`: Absolute path to the generated transcript.
+- `{{outputDir}}`: Absolute path to the transcript directory.
+- `{{baseName}}`: Transcript file stem.
+- `{{outputFile}}`: Suggested absolute path for the summary output.
+
+The summariser should produce a Markdown or JSON file containing a summary and action items. If no summarisation command is configured, the plugin derives a lightweight summary and action items directly from the transcript.
+
+### Other options
+
+- **Capture system audio by default**: Request permission to include speaker output when recording (desktop platforms only; user approval required by the OS).
+- **Open note after creation**: Automatically open the generated meeting note when processing completes.
+- **Embed audio in note**: Include an embedded audio player in the created note.
+- **Include transcript in note**: Append the full transcript in a collapsible `<details>` block.
+- **CLI working directory / timeout**: Advanced configuration for command execution.
+
+## Usage
+
+1. Use the ribbon microphone icon or the *Open AI meeting recorder* command palette entry to open the recording modal.
+2. Choose whether to capture system audio and click **Start recording**.
+3. Conduct the meeting. When finished, click **Stop & process**.
+4. The plugin saves the audio, runs the configured transcription and summarisation commands, and creates a meeting note summarising the discussion alongside identified action items and the full transcript.
+
+Processing progress is displayed in the modal. When finished, click **Open meeting note** to jump directly to the generated Markdown file.
+
+## Command placeholders summary
+
+| Placeholder | Description |
+| ----------- | ----------- |
+| `{{audioFile}}` | Absolute path to the recorded audio file (e.g. `/path/to/vault/AI Meeting Notes/Recordings/meeting-20240101-120000.webm`). |
+| `{{outputDir}}` | Absolute path to the transcript directory configured in settings. |
+| `{{baseName}}` | Recording base name (filename without extension). |
+| `{{transcriptFile}}` | Absolute path to the generated transcript file. |
+| `{{outputFile}}` | Suggested absolute path for the summariser output (e.g. summary Markdown). |
+
+## Safety and privacy
+
+- All processing happens locally. The plugin never sends audio or transcript data over the network.
+- Commands are executed exactly as configured. Ensure you trust any executable paths you configure.
+- Audio capture is subject to operating system permissions; you will be prompted when the plugin first attempts to record microphone or system audio.
+
+## Development notes
+
+- Source code lives in `src/` and is bundled into `main.js` with esbuild.
+- Run `npm run dev` during development for incremental builds. Use `npm run build` for release builds (includes TypeScript type checking).
+- The plugin is marked desktop-only because it requires filesystem access and local command execution.
+
+## License
+
+This project is released under the MIT License. See [LICENSE](LICENSE) for details.
