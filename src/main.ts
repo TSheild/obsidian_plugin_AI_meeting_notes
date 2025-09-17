@@ -2,11 +2,12 @@ import { Notice, Plugin, TFile } from "obsidian";
 import { AudioRecorder, RecordingResult } from "./audio/recorder";
 import { summarizeTranscript } from "./ai/summarizer";
 import { transcribeAudio } from "./ai/transcription";
-import { AudioFormat, DEFAULT_SETTINGS, MeetingNotesSettingTab, MeetingNotesSettings } from "./settings";
+import { DEFAULT_SETTINGS, MeetingNotesSettingTab, MeetingNotesSettings } from "./settings";
 import { CommandExecutionError, splitCommandLine } from "./utils/command";
 import { absolutePathToVaultPath, ensureFolder, getAbsolutePath, joinVaultPath, saveBinaryFile, saveTextFile } from "./utils/files";
 import { formatDateForFile, formatDateTimeISO } from "./utils/time";
 import { formatTemplate } from "./utils/template";
+import { composeMeetingNote, getAudioMimeType } from "./utils/note";
 import * as path from "path";
 
 export default class MeetingNotesPlugin extends Plugin {
@@ -75,7 +76,7 @@ export default class MeetingNotesPlugin extends Plugin {
     try {
       await this.recorder.start({
         includeSystemAudio: this.settings.includeSystemAudio,
-        mimeType: this.getMimeType(this.settings.audioFormat),
+        mimeType: getAudioMimeType(this.settings.audioFormat),
       });
       this.setStatus("Recording…", true);
       new Notice("AI Meeting Notes recording started.");
@@ -190,15 +191,20 @@ export default class MeetingNotesPlugin extends Plugin {
 
     this.setStatus("Saving results…");
 
-    const noteContent = this.composeNote({
-      title,
-      audioVaultPath,
-      transcriptVaultPath,
-      summaryMarkdown,
-      transcript: transcription.transcript,
-      startedAt: result.startedAt,
-      durationMs: result.durationMs,
-    });
+    const noteContent = composeMeetingNote(
+      {
+        title,
+        audioVaultPath,
+        transcriptVaultPath,
+        summaryMarkdown,
+        transcript: transcription.transcript,
+        startedAt: result.startedAt,
+        durationMs: result.durationMs,
+      },
+      {
+        includeTranscript: this.settings.includeTranscriptInNote,
+      },
+    );
 
     await ensureFolder(this.app, this.settings.notesFolder);
     const noteFileName = `${title}.md`;
@@ -210,68 +216,12 @@ export default class MeetingNotesPlugin extends Plugin {
     }
   }
 
-  private composeNote(params: {
-    title: string;
-    audioVaultPath: string;
-    transcriptVaultPath: string;
-    summaryMarkdown: string;
-    transcript: string;
-    startedAt: Date;
-    durationMs: number;
-  }): string {
-    const durationText = this.formatDuration(params.durationMs);
-    const createdIso = formatDateTimeISO(params.startedAt);
-    const resources: string[] = [`- [[${params.audioVaultPath}|Audio recording]]`];
-    if (params.transcriptVaultPath) {
-      resources.push(`- [[${params.transcriptVaultPath}|Transcript]]`);
-    }
-
-    const summaryContent = params.summaryMarkdown.trim().length > 0 ? params.summaryMarkdown.trim() : "*No summary generated.*";
-
-    const sections = [
-      "---",
-      `created: ${createdIso}`,
-      `audio: [[${params.audioVaultPath}]]`,
-      `transcript: [[${params.transcriptVaultPath}]]`,
-      "---",
-      `# ${params.title}`,
-      `**Recorded:** ${params.startedAt.toLocaleString()} (${durationText})`,
-      "## Resources",
-      resources.join("\n"),
-      summaryContent,
-    ];
-
-    if (this.settings.includeTranscriptInNote) {
-      sections.push("## Transcript");
-      sections.push(params.transcript.trim());
-    }
-
-    return sections.join("\n\n").trimEnd() + "\n";
-  }
-
-  private getMimeType(format: AudioFormat): string {
-    if (format === "ogg") {
-      return "audio/ogg;codecs=opus";
-    }
-    return "audio/webm;codecs=opus";
-  }
-
   private setStatus(message: string, isRecording: boolean = false) {
     if (!this.statusBarEl) {
       return;
     }
     this.statusBarEl.setText(`AI Meeting Notes: ${message}`);
     this.statusBarEl.toggleClass("ai-meeting-notes-recording", isRecording);
-  }
-
-  private formatDuration(durationMs: number): string {
-    const totalSeconds = Math.max(1, Math.round(durationMs / 1000));
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    if (minutes > 0) {
-      return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
-    }
-    return `${seconds}s`;
   }
 
   private async openFile(file: TFile) {
